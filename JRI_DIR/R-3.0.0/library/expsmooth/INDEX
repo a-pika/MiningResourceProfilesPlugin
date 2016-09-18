@@ -1,0 +1,26 @@
+ausgdp                  Quarterly Australian GDP
+bonds                   Monthly US government bond yields
+cangas                  Monthly Canadian gas production
+carparts                Monthly sales car parts
+dji                     Monthly Dow Jones Index
+djiclose                Monthly Dow Jones Index: closing
+enplanements            Monthly US domestic enplanements
+expsmooth-package       Data sets for "Forecasting with exponential
+                        smoothing"
+fmsales                 Weekly FM sales
+freight                 Annual US new freight cars
+frexport                Quarterly French exports
+gasprice                US gasoline prices
+hospital                Monthly patient count
+jewelry                 Weekly jewelry sales
+mcopper                 Monthly copper prices
+msales                  Monthly product sales
+partx                   Monthly sales of an automobile part
+ukcars                  Quarterly UK passenger car production
+unemp.cci               Unemployment and the CCI
+usgdp                   Quarterly US GDP
+usnetelec               Annual US net electricity generation
+utility                 Hourly utility demand
+vehicles                Hourly vehicle counts
+visitors                Monthly Australian overseas vistors
+xrates                  Monthly exchange rates

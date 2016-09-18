@@ -1,0 +1,7 @@
+dpareto                 Pareto distribution
+evGui                   GUI to explore options and results of the
+                        "extremevalues" package
+extremevalues           An R package for outlier detection
+getOutliers             Detect outliers
+invErf                  Inverse error function
+outlierPlot             Plot results of outlierdetection
