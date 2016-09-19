@@ -1,0 +1,91 @@
+advert                  Sales and advertising expenditure
+advsales                Sales volume and advertising expenditure
+airpass                 Monthly Airline Passenger Numbers 1949-1960
+auto                    Attributes of some US and Japanese automobiles
+bank                    Mutual savings bank deposits
+beer                    Monthly beer production
+bicoal                  Annual bituminous coal production
+books                   Sales of paperback and hardcover books
+boston                  Monthly dollar volume of sales
+bricksq                 Quarterly clay brick production
+canadian                Canadian unemployment rate
+capital                 Quarterly capital expenditure and
+                        appropriations
+cement                  Cement composition and heat data
+chicken                 Price of chicken
+condmilk                Condensed milk
+copper                  Copper price
+copper1                 Copper prices
+copper2                 Copper prices
+copper3                 Copper prices
+cowtemp                 Temperature of a cow
+cpimel                  Consumer price index
+dexter                  Dexterity test and production ratings
+dj                      Dow-Jones index
+dole                    Unemployment benefits in Australia
+dowjones                Dow-Jones index
+econsumption            Electricity consumption and temperature
+eggs                    Price of eggs
+eknives                 Sales of electric knives
+elco                    Sales of Elco's laser printers
+elec                    Electricity production
+expenditure             Expenditure
+fancy                   Sales for a souvenir shop
+fma-package             Data sets from "Forecasting: methods and
+                        applications" by Makridakis, Wheelwright and
+                        Hyndman (1998)
+french                  Industry index
+housing                 Housing data
+hsales                  Sales of one-family houses
+hsales2                 Sales of new one-family houses
+huron                   Level of Lake Huron
+ibm                     IBM sales and profit
+ibmclose                Closing IBM stock price
+input                   Input series
+internet                Number of internet users
+invent15                Inventory demand
+jcars                   Motor vehicle production
+kkong                   King Kong data
+labour                  Civilian labour force
+lynx                    Annual Canadian Lynx trappings 1821-1934
+milk                    Monthly milk production per cow
+mink                    Number of minks trapped
+mortal                  Mortality
+motel                   Total accommodation at hotel, motel and guest
+                        house
+motion                  Employment figures in the motion picture
+                        industry
+nail                    Nail prices
+oilprice                Oil prices
+olympic                 Men's 400 m final winning times in each Olympic
+                        Games
+ozone                   Ozone depletion and melanoma rates
+paris                   Average temperature
+pcv                     GDP
+petrol                  Sales of petroleum and related product
+pigs                    Number of pigs slaughtered
+plastics                Sales of plastic product
+pollution               Shipment of pollution equipment
+productC                Sales of product C
+pulpprice               Pulp price and shipments
+qelec                   Electricity production
+qsales                  Sales data
+running                 Running times and maximal aerobic capacity
+sales                   Sales data
+schizo                  Perceptual speed scores
+shampoo                 Sales of shampoo
+sheep                   Sheep population
+ship                    Electric can opener shipments
+shipex                  Shipments
+strikes                 Number of strikes
+telephone               Telephone cost
+texasgas                Price and consumption of natural gas
+ukdeaths                Total deaths and serious injuries
+usdeaths                Accidental deaths in USA
+uselec                  Total generation of electricity
+ustreas                 Treasury bill contracts
+wagesuk                 Real daily wages
+wheat                   Wheat prices
+wn                      White noise series
+wnoise                  White noise time series
+writing                 Sales of printing and writing paper

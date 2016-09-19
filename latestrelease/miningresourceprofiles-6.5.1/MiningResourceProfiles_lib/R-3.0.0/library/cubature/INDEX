@@ -1,0 +1,4 @@
+adaptIntegrate          Adaptive multivariate integration over
+                        hypercubes
+cubature-package        Cubature is a package for adaptive
+                        multidimensional integration over hypercubes

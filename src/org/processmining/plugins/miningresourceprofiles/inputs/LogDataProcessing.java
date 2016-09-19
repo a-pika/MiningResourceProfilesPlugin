@@ -125,9 +125,9 @@ public void createDB(final Connection con, XLog log, InputParameters ip)throws E
 		createSQLViews(con);
 		
 		//TODO
-		//V1
-		//logToDB(log, con, map);
-		//addAttributes(log, con, map);
+		//V1 (querying DB - long processing times)
+		logToDB(log, con, map);
+		addAttributes(log, con, map);
 		
 		//V2
 		//logToDB(log, con, map);
@@ -136,8 +136,8 @@ public void createDB(final Connection con, XLog log, InputParameters ip)throws E
 		//V3
 		//logToDBV2(log, con, map);
 		
-		//V4
-		logToDBV3(log, con, map);
+		//V4 (pre-processing in memory)
+		//logToDBV3(log, con, map);
 
 };	 
 
@@ -777,9 +777,11 @@ while(rs.next()) {
 	{
 		if(type.equalsIgnoreCase("complete"))
 		{
-			String sqlQuery3 = "SELECT time FROM eventlog WHERE caseid='" +caseid+"' AND type='start' AND task='"+task+"' AND time<'"+time+"'"; 
+			String sqlQuery3 = "SELECT time FROM eventlog WHERE caseid='" +caseid+"' AND type='start' AND task='"+task+"' AND time<='"+time+"'"; 
 	     	 
-			ResultSet rs3 = dbStatement.executeQuery(sqlQuery3);
+			
+			//assumption - the first suitable start event
+	/*		ResultSet rs3 = dbStatement.executeQuery(sqlQuery3);
 			if(rs3.next())
 			{rs3.beforeFirst();
 			
@@ -791,8 +793,46 @@ while(rs.next()) {
 				duration = task_duration.toString();
 			}else
 			{duration="0";}
-		
-		}else {duration = "0";}}
+			}else {duration = "0";}
+*/			
+			
+			//assumption - the latest suitable start event
+			ResultSet rs3 = dbStatement.executeQuery(sqlQuery3);
+			if(rs3.next())
+			{rs3.beforeFirst();}
+			
+			Vector<Timestamp> startTime = new Vector<Timestamp>();
+			
+			while (rs3.next()) 
+			{
+				if (!(rs3.getTimestamp(1)==null)) 
+					startTime.add(rs3.getTimestamp(1));
+			}
+			
+			if(startTime.size() == 0)
+			{
+				duration="0";
+			}
+			else
+			{
+				Timestamp latesttime = null;
+				
+				for(int i=0; i<startTime.size(); i++)
+				{
+					if(latesttime == null)
+						{latesttime = startTime.elementAt(i);}
+					else
+					{
+						if(latesttime.before(startTime.elementAt(i)))
+							latesttime = startTime.elementAt(i);	
+					}
+				}
+				
+				Long task_duration = time.getTime()-latesttime.getTime();
+				duration = task_duration.toString();
+			}
+			
+		}
 		else
 		{duration = "0";}
 		System.out.println("duration assigned");
@@ -802,6 +842,7 @@ while(rs.next()) {
 
 	if(workloadb)
 	{
+		//before the event time
 		String sqlQuery1 = "SELECT (SELECT COUNT(*) FROM eventlog WHERE time < '"+time+"' AND resource='" +resource+"'" +
 				" AND (type='start' OR type='resume')) - (SELECT COUNT(*) FROM eventlog WHERE time < '"+time+"' AND resource='" +resource+"'" +
 				" AND (type='complete' OR type='suspend'))";
@@ -1809,8 +1850,8 @@ for(int i=0; i<eventDBLines.size(); i++)
 }
 
 System.out.println("Starting calculating case attributes: "+System.nanoTime());
-//add case attributes
 //TODO
+//add case attributes
 for(int i=0; i<caselog.size(); i++)
 {	
 	caselogdata = "";
@@ -2046,81 +2087,16 @@ for(int i=0; i<eventlog.size(); i++)
 
 //calculating workload
 //TODO
-//create a copy of eventLog
-/*	Vector<Vector <String>> eventlogSorted = new Vector<Vector <String>>();
-	eventlogSorted.addAll(eventlog);
-
-	//sort event log
-	long sstartTime = System.nanoTime();
-	System.out.println("sorting started: "+ sstartTime);
-
-	Collections.sort(eventlogSorted, new Comparator<Vector<String>>(){
-	  @Override  public int compare(Vector<String> v1, Vector<String> v2) {
-	  	
-	    	if(Long.valueOf(v1.elementAt(3)) == Long.valueOf(v2.elementAt(3)))
-	  		return 0;
-	  	
-	    	if(Long.valueOf(v1.elementAt(3)) == null)
-				return -1;
-	    	
-	    	if(Long.valueOf(v2.elementAt(3)) == null)
-				return 1;
-		  	
-	    	if(Long.valueOf(v1.elementAt(3)) < Long.valueOf(v2.elementAt(3)))
-				return -1;
-	    	else
-	    		return 1;
-	}});
-	long sendTime = System.nanoTime();
-	System.out.println("sorting ended: "+ sendTime);
-	long sdur = sendTime-sstartTime;
-
-	System.out.println("sorting duration: "+sdur);*/
-	
 if(eaAdd.get("workload") || eaAdd.get("workload_duration"))
 {
 	
 	//create a copy of eventLog
 	Vector<Vector <String>> eventlogSorted = new Vector<Vector <String>>();
 	
-	//TODO
 	eventlogSorted = sortLogJava(eventlog,eventlogSorted);
 	//eventlogSorted = sortLogInsert(eventlog,eventlogSorted);
 	//eventlogSorted = sortLogInsertMy(eventlog,eventlogSorted);
 	//eventlogSorted = sortLogInsertMyCur(eventlog,eventlogSorted);
-	
-	//SORTING
-	/////////////////////////////////////////////////////////////////////////////
-	/*eventlogSorted.addAll(eventlog);
-
-	//sort event log
-	long sstartTime = System.nanoTime();
-	System.out.println("sorting started: "+ sstartTime);
-
-	Collections.sort(eventlogSorted, new Comparator<Vector<String>>(){
-	  @Override  public int compare(Vector<String> v1, Vector<String> v2) {
-	  	
-	    	if(Long.valueOf(v1.elementAt(3)) == Long.valueOf(v2.elementAt(3)))
-	  		return 0;
-	  	
-	    	if(Long.valueOf(v1.elementAt(3)) == null)
-				return -1;
-	    	
-	    	if(Long.valueOf(v2.elementAt(3)) == null)
-				return 1;
-		  	
-	    	if(Long.valueOf(v1.elementAt(3)) < Long.valueOf(v2.elementAt(3)))
-				return -1;
-	    	else
-	    		return 1;
-	}});
-	long sendTime = System.nanoTime();
-	System.out.println("sorting ended: "+ sendTime);
-	long sdur = sendTime-sstartTime;
-
-	System.out.println("sorting duration: "+sdur);*/
-	
-	/////////////////////////////////////////////////////////////////////////////
 	
 	Map<String,Long> resource_workload = new HashMap<String,Long>();
 	Map<String,Long> resource_workload_time = new HashMap<String,Long>();
