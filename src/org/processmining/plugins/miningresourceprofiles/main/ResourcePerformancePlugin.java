@@ -66,8 +66,9 @@ public HeaderBar  main (UIPluginContext context, XLog inputlog) throws Exception
 	 
 
 			Rengine re=new Rengine (new String [] {"--vanilla"}, false, null);	
-return maingui.displayMainGUI(con, inputlog, re, host, user, pass, db);
-
+			return maingui.displayMainGUI(con, inputlog, re, host, user, pass, db);
+			
+		
 
 
 }

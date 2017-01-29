@@ -126,8 +126,8 @@ public void createDB(final Connection con, XLog log, InputParameters ip)throws E
 		
 		//TODO
 		//V1 (querying DB - long processing times)
-		logToDB(log, con, map);
-		addAttributes(log, con, map);
+		//logToDB(log, con, map);
+		//addAttributes(log, con, map);
 		
 		//V2
 		//logToDB(log, con, map);
@@ -136,8 +136,11 @@ public void createDB(final Connection con, XLog log, InputParameters ip)throws E
 		//V3
 		//logToDBV2(log, con, map);
 		
-		//V4 (pre-processing in memory)
+		//V4 (pre-processing in memory - with sort)
 		//logToDBV3(log, con, map);
+		
+		//V5 (pre-processing in memory - map or resource events)
+		logToDBV4(log, con, map);
 
 };	 
 
@@ -416,12 +419,11 @@ public void createSQLViews(Connection con) throws Exception
 			rbidef = "select (select sum(workload*workload_duration) from etr)/(select sum(workload_duration) from etr)";
 			dbStatement.executeUpdate("INSERT INTO RBIs(name, definition) VALUES ('"+rbiname+"','"+rbidef+"')");
 	
-			
 			rbiname = "Multitasking";
 			rbidef = "select (select sum(workload_duration) from etr where workload>1)/(select sum(workload_duration) from etr where workload>0)";
 			dbStatement.executeUpdate("INSERT INTO RBIs(name, definition) VALUES ('"+rbiname+"','"+rbidef+"')");
 			
-			rbiname = "Activity Reassignments";
+			rbiname = "Activity Reassignments - without activity repetitions";
 			rbidef = "select count(*) from etr where type=''start'' and exists (select * from eventlog where type=''complete'' and resource<>R1() and etr.caseid=eventlog.caseid and etr.task=eventlog.task and etr.time<eventlog.time)";
 			dbStatement.executeUpdate("INSERT INTO RBIs(name, definition) VALUES ('"+rbiname+"','"+rbidef+"')");
 		
@@ -794,7 +796,7 @@ while(rs.next()) {
 			}else
 			{duration="0";}
 			}else {duration = "0";}
-*/			
+   */			
 			
 			//assumption - the latest suitable start event
 			ResultSet rs3 = dbStatement.executeQuery(sqlQuery3);
@@ -1693,7 +1695,527 @@ System.out.println("Event attributes added: "+System.nanoTime());
 
 }
 
+//pre-processing in memory - same result as using DB 
+public void logToDBV4(XLog log, Connection con, ELDBmapping map) throws Exception
+{
 
+Vector <String> cadb = new Vector <String>(); 
+Vector <String> cael = new Vector <String>(); 
+Vector <String> eadb = new Vector <String>(); 
+Vector <String> eael = new Vector <String>(); 
+
+Vector <String> caseDBLines = new Vector <String>(); 
+caseDBLines.add("caseid");
+caseDBLines.add("number_of_resources");
+caseDBLines.add("duration");
+caseDBLines.add("enddate");
+
+Vector <String> eventDBLines = new Vector <String>(); 
+eventDBLines.add("caseid");
+eventDBLines.add("task");
+eventDBLines.add("type");
+eventDBLines.add("time");
+eventDBLines.add("resource");
+eventDBLines.add("eventid");
+eventDBLines.add("task_index");
+eventDBLines.add("duration");
+eventDBLines.add("workload");
+eventDBLines.add("workload_duration");
+
+for(int i=0; i<map.ELAttributes.size(); i++)
+{
+	if(!map.ELAttributes.elementAt(i).equals("NONE") && !map.ELAttributes.elementAt(i).equals("CALCULATE") && !map.DBELAttributes.elementAt(i).equals("NONE"))
+	{
+		eael.add(map.ELAttributes.elementAt(i));
+		eadb.add(map.DBELAttributes.elementAt(i));
+	}
+}
+
+for(int i=0; i<map.CLAttributes.size(); i++)
+{
+	if(!map.CLAttributes.elementAt(i).equals("NONE") && !map.CLAttributes.elementAt(i).equals("CALCULATE") && !map.DBCLAttributes.elementAt(i).equals("NONE"))
+	{
+		cael.add(map.CLAttributes.elementAt(i));
+		cadb.add(map.DBCLAttributes.elementAt(i));
+	}
+}
+
+
+String casedbnames = "caseid,number_of_resources,duration,enddate,";
+for(int i=0; i<cadb.size(); i++)
+{
+	String ca = cadb.elementAt(i);
+	if(!ca.equals("caseid") && !ca.equals("number_of_resources") && !ca.equals("duration") && !ca.equals("enddate"))
+	{casedbnames+=ca +",";
+	caseDBLines.add(ca);
+	}
+}
+casedbnames = casedbnames.substring(0, casedbnames.length()-1);
+
+String eventdbnames = "caseid,task,type,time,resource,eventid,task_index,duration,workload,workload_duration,";
+for(int i=0; i<eadb.size(); i++)
+{
+	String ea = eadb.elementAt(i);
+	if(!ea.equals("caseid") && !ea.equals("task") && !ea.equals("type") && !ea.equals("time") && !ea.equals("resource") && !ea.equals("eventid") && !ea.equals("task_index") && !ea.equals("duration") && !ea.equals("workload") && !ea.equals("workload_duration"))
+	{eventdbnames+= ea+",";
+	eventDBLines.add(ea);}
+}
+eventdbnames = eventdbnames.substring(0, eventdbnames.length()-1);
+
+Vector<Vector<String>> caselog = new Vector<Vector<String>>(); 
+Vector<Vector<String>> eventlog = new Vector<Vector<String>>(); 
+
+for (XTrace t : log) 
+{
+	XAttributeLiteral caseidattr = (XAttributeLiteral)t.getAttributes().get(cael.elementAt(0));
+	String caseid = caseidattr.getValue();
+	Vector<String> caseLine = new Vector<String>(); 
+	
+	for(int i=0; i<cael.size(); i++)
+	{
+		XAttributeLiteral nextcaseattr = (XAttributeLiteral)t.getAttributes().get(cael.elementAt(i));
+		String next = nextcaseattr.getValue();
+		caseLine.add(next); 
+	}
+	caselog.add(caseLine); 
+	
+	
+	for (XEvent e : t) 
+	{
+		Vector<String> event = new Vector<String>(); 
+		event.add(caseid); 
+		
+		for(int i=0; i<eael.size(); i++)
+		{
+			if(eadb.elementAt(i).equals("time"))
+			{
+				XAttributeTimestamp nexteventattr = (XAttributeTimestamp)e.getAttributes().get(eael.elementAt(i));
+				Date nexte = nexteventattr.getValue();
+				Long nexttime = nexte.getTime();
+				
+				event.add(nexttime.toString()); 
+				
+			}
+			else
+			{
+			XAttributeLiteral nexteventattr = (XAttributeLiteral)e.getAttributes().get(eael.elementAt(i));
+			String nexte;
+			if(!(nexteventattr == null))
+			{nexte = nexteventattr.getValue();}else{nexte = "NULL";}
+			event.add(nexte); 
+			}
+			
+		}
+		
+		eventlog.add(event);
+
+	}
+	
+}
+
+eadb.add(0, "caseid");
+System.out.println("cadb" + cadb);
+System.out.println("eadb" + eadb);
+System.out.println("caseDBLines" + caseDBLines);
+System.out.println("eventDBLines" + eventDBLines);
+System.out.println("caselog" + caselog);
+System.out.println("eventlog" + eventlog);
+
+String cdbline = "";
+String edbline = "";
+Vector <String> cqueries = new Vector<String>();
+Vector <String> equeries = new Vector<String>();
+String eventlogdata = "";
+String caselogdata = "";
+
+Map<String,Boolean> caAdd = new HashMap<String,Boolean>();
+Map<String,Boolean> eaAdd = new HashMap<String,Boolean>();
+
+for(int i=0; i<caseDBLines.size(); i++)
+{
+	String nextCA = caseDBLines.elementAt(i);
+		
+	if(cadb.contains(nextCA))
+		caAdd.put(nextCA,false);
+	else
+		caAdd.put(nextCA,true);
+}
+
+for(int i=0; i<eventDBLines.size(); i++)
+{
+	String nextEA = eventDBLines.elementAt(i);
+		
+	if(eadb.contains(nextEA))
+		eaAdd.put(nextEA,false);
+	else
+		eaAdd.put(nextEA,true);
+}
+
+System.out.println("Starting calculating case attributes: "+System.nanoTime());
+
+//add case attributes
+for(int i=0; i<caselog.size(); i++)
+{	
+	caselogdata = "";
+	boolean caseFound = false;
+	int caseStart = 0;
+	
+	Vector<String> caseline = caselog.elementAt(i);
+	String caseid = caseline.elementAt(0);
+	String numres = "0";
+	String caseduration = "0";
+	String enddate = "NULL";
+	
+	//calculate extra case attributes
+	if(caAdd.get("number_of_resources") || caAdd.get("duration") || caAdd.get("enddate"))
+	{
+	
+	Set<String> resources = new HashSet<String>();
+	Timestamp firsttime = null;
+	Timestamp lasttime = null;
+	Timestamp curTime = null;
+	
+	for(int k=caseStart; k<eventlog.size(); k++)
+	{
+			Vector<String> e = eventlog.elementAt(k);
+			
+			if(e.elementAt(0).equals(caseid) && !caseFound)
+			{
+				caseFound = true;
+				caseStart = i;
+			}else
+			{
+				if(!e.elementAt(0).equals(caseid) && caseFound) 
+				{
+					caseStart = i;
+					caseFound = false;
+					break;
+				}
+			}	
+				
+			if(e.elementAt(0).equals(caseid))
+			{
+				resources.add(e.elementAt(4));
+				curTime = new Timestamp(Long.valueOf(e.elementAt(3)));
+			
+				if(firsttime == null || firsttime.after(curTime))
+					firsttime = curTime;
+					
+				if(lasttime == null || lasttime.before(curTime))
+					lasttime = curTime;
+			
+			}
+			
+		}
+	  
+	Integer res_num = resources.size();
+	numres=res_num.toString();
+	
+	Long case_long_duration = lasttime.getTime()-firsttime.getTime();
+	caseduration = case_long_duration.toString();
+
+	enddate = lasttime.toString();
+	}
+	
+	if(caAdd.get("number_of_resources"))
+	caseline.add(1, numres);
+	
+	if(caAdd.get("duration"))
+	caseline.add(2, caseduration); 
+	
+	if(caAdd.get("enddate"))
+	caseline.add(3, enddate); 	
+	
+	for(int j=0; j<caseline.size(); j++)
+	caselogdata+= "'"+caseline.elementAt(j)+"',";
+	
+	caselogdata = caselogdata.substring(0, caselogdata.length()-1);
+	cdbline = "insert into caselog("+casedbnames+") values("+caselogdata+")";	
+	cqueries.add(cdbline);
+}
+
+//Save case attributes -----------------------------------------------------------------------------------
+
+System.out.println("Case attributes calculated: "+System.nanoTime());
+Statement cstatement = con.createStatement();
+
+for (String cquery : cqueries) {
+cstatement.addBatch(cquery);
+}
+cstatement.executeBatch();
+cstatement.close();
+
+System.out.println("Case attributes added: "+System.nanoTime());
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//add event attributes
+String task_index = "0";
+String duration = "0";
+String workload = "0";
+String workload_duration = "0";
+String eventid = "0";
+
+
+//calculating task index and duration
+
+if(eaAdd.get("eventid") || eaAdd.get("task_index") || eaAdd.get("duration"))
+{
+
+Integer eventindex = 0;
+String currentCase = null;
+int caseStart = 0;
+
+for(int i=0; i<eventlog.size(); i++)
+{	
+	eventlogdata = "";
+	
+			Vector<String> event = eventlog.elementAt(i);
+			
+			String caseid = event.elementAt(0);
+			String task = event.elementAt(1);
+			String type = event.elementAt(2);
+			Long time = Long.valueOf(event.elementAt(3));
+			
+			if(i == 0)
+				{
+					currentCase = caseid;
+				}
+			else
+				{
+					if(!caseid.equals(currentCase))
+					{
+						currentCase = caseid;
+						caseStart = i;
+					}
+				}
+	
+			//event ID -------------------------------------------------------
+			eventindex++;
+			eventid = eventindex.toString();
+			
+			Integer count = 0;
+			Long startTime = null;
+			
+			for(int k=caseStart; k<eventlog.size(); k++)
+			{
+					Vector<String> e = eventlog.elementAt(k);
+					String ecaseid = e.elementAt(0);
+					String etask = e.elementAt(1);
+					String etype = e.elementAt(2);
+					Long etime = Long.valueOf(e.elementAt(3));
+			
+			if(!caseid.equals(ecaseid))
+				break;
+				
+			//task_index -----------------------------------------------------
+							
+				if(etask.equals(task) && etype.equals(type) && etime<time)
+				count++;
+						
+			//duration--------------------------------------------------------
+					
+				if(type.equalsIgnoreCase("complete"))
+					{
+						//assumption - the closest 'start' event
+						if(etask.equals(task) && etype.equals("start") && etime<=time)
+							{
+								if(startTime == null) 
+								{
+									startTime = Long.valueOf(e.elementAt(3));
+								}
+								else
+								{
+									if(startTime<etime) {startTime = etime;}
+								}
+							}
+					}else {duration = "0";}
+			
+				}
+							
+				//////////////////////////////////		
+						count++;
+						task_index=count.toString();
+						
+						if (startTime != null) 
+						{
+							Long task_duration = time-startTime;
+							duration = task_duration.toString();
+						}else
+						{duration="0";}
+						
+				//eventid
+				if(eaAdd.get("eventid"))
+				event.add(5, eventid); 
+					
+				//task_index
+				if(eaAdd.get("task_index"))
+				event.add(6, task_index); 
+				
+				//duration
+				if(eaAdd.get("duration"))
+				event.add(7, duration); 
+			
+			//if workload is not needed
+			if(!eaAdd.get("workload") && !eaAdd.get("workload_duration"))
+			{	
+				//workload
+				if(eaAdd.get("workload"))
+				event.add(8, "0"); 
+					
+				//workload_duration
+				if(eaAdd.get("workload_duration"))
+				event.add(9, "0");
+				
+				for(int j=0; j<3; j++)
+					eventlogdata+= "'"+event.elementAt(j)+"',";
+				
+				Timestamp event_time = new Timestamp(Long.valueOf(event.elementAt(3)));
+				String etime = event_time.toString();
+				eventlogdata+= "'"+etime+"',";
+					
+				for(int j=4; j<event.size(); j++)
+				eventlogdata+= "'"+event.elementAt(j)+"',";
+				
+				eventlogdata = eventlogdata.substring(0, eventlogdata.length()-1);
+				edbline = "insert into eventlog("+eventdbnames+") values("+eventlogdata+")";	
+				equeries.add(edbline);
+			}
+		
+}
+
+
+}
+
+
+//calculating workload
+//TODO
+if(eaAdd.get("workload") || eaAdd.get("workload_duration"))
+{
+	Map<String,Vector<Vector <String>>> resource_log = new HashMap<String,Vector<Vector <String>>>();
+	
+	//creating resource logs
+	for(int i=0; i<eventlog.size(); i++)
+	{	
+		eventlogdata = "";
+		
+				Vector<String> event = eventlog.elementAt(i);
+				String resource = event.elementAt(4);
+				if(resource_log.get(resource) == null)
+				{
+					Vector<Vector <String>> resLog = new Vector<Vector <String>>();
+					resLog.add(event);
+					resource_log.put(resource, resLog);
+					
+				}
+				else
+				{
+					resource_log.get(resource).add(event);
+				}
+	}
+	
+	
+for(int i=0; i<eventlog.size(); i++)
+{	
+	eventlogdata = "";
+	
+			Vector<String> event = eventlog.elementAt(i);
+			//String type = event.elementAt(2);
+			Long time = Long.valueOf(event.elementAt(3));
+			String resource = event.elementAt(4);
+			
+			Vector<Vector <String>> resLog = resource_log.get(resource);
+			
+			workload = "0";
+			workload_duration = "0";
+			
+	if(resLog != null)
+	{
+		Long curMaxPrevTime = (long) 0;
+		Long startedCounter = (long) 0;
+		Long completedCounter = (long) 0;
+		
+		for(int j=0; j<resLog.size(); j++)
+		{
+			Vector<String> curEvent = resLog.elementAt(j);
+			String curType = curEvent.elementAt(2);
+			Long curTime = Long.valueOf(curEvent.elementAt(3));
+			
+			//workload
+			//"SELECT (SELECT COUNT(*) FROM eventlog WHERE time < '"+time+"' AND resource='" +resource+"'" + " AND (type='start' OR type='resume')) 
+			//- (SELECT COUNT(*) FROM eventlog WHERE time < '"+time+"' AND resource='" +resource+"'" + " AND (type='complete' OR type='suspend'))"
+
+			if(curTime < time && (curType.equalsIgnoreCase("start") || curType.equalsIgnoreCase("resume")))
+				startedCounter ++;
+			
+			if(curTime < time && (curType.equalsIgnoreCase("complete") || curType.equalsIgnoreCase("suspend")))
+				completedCounter ++;
+		
+			//workload_duration
+			//"SELECT max(time) FROM eventlog WHERE resource='" +resource+"' AND time<'"+time+"'" 
+		
+			if(curTime < time && curTime > curMaxPrevTime)
+				curMaxPrevTime = curTime;
+		}
+		
+		Long wl_dur = (long) 0;
+		Long wl = (long) 0;
+		
+		if(curMaxPrevTime > 0)
+			wl_dur = time - curMaxPrevTime;
+		
+		if(startedCounter > completedCounter)
+			wl = startedCounter - completedCounter;
+		
+		workload = wl.toString();
+		workload_duration = wl_dur.toString();
+
+		
+	}
+	
+				//workload
+				if(eaAdd.get("workload"))
+				event.add(8, workload); 
+					
+				//workload_duration
+				if(eaAdd.get("workload_duration"))
+				event.add(9, workload_duration);
+				
+				for(int j=0; j<3; j++)
+					eventlogdata+= "'"+event.elementAt(j)+"',";
+				
+				Timestamp event_time = new Timestamp(Long.valueOf(event.elementAt(3)));
+				String etime = event_time.toString();
+				eventlogdata+= "'"+etime+"',";
+					
+				for(int j=4; j<event.size(); j++)
+				eventlogdata+= "'"+event.elementAt(j)+"',";
+				
+				eventlogdata = eventlogdata.substring(0, eventlogdata.length()-1);
+				edbline = "insert into eventlog("+eventdbnames+") values("+eventlogdata+")";	
+				equeries.add(edbline);
+
+}
+	
+}
+
+
+//Add event attributes -----------------------------------------------------------------------------------
+System.out.println("Event attributes calculated: "+System.nanoTime());
+Statement estatement = con.createStatement();
+
+for (String equery : equeries) {
+  estatement.addBatch(equery);
+}
+
+estatement.executeBatch();
+estatement.close();
+System.out.println("Event attributes added: "+System.nanoTime());
+
+
+}
+
+
+//pre-processing in memory using sort - different approach to workload and workload_duration
 public void logToDBV3(XLog log, Connection con, ELDBmapping map) throws Exception
 {
 
@@ -1850,7 +2372,7 @@ for(int i=0; i<eventDBLines.size(); i++)
 }
 
 System.out.println("Starting calculating case attributes: "+System.nanoTime());
-//TODO
+
 //add case attributes
 for(int i=0; i<caselog.size(); i++)
 {	
@@ -1953,7 +2475,7 @@ String workload = "0";
 String workload_duration = "0";
 String eventid = "0";
 
-//TODO
+
 //calculating task index and duration
 
 if(eaAdd.get("eventid") || eaAdd.get("task_index") || eaAdd.get("duration"))
@@ -2086,7 +2608,6 @@ for(int i=0; i<eventlog.size(); i++)
 
 
 //calculating workload
-//TODO
 if(eaAdd.get("workload") || eaAdd.get("workload_duration"))
 {
 	
@@ -2100,6 +2621,9 @@ if(eaAdd.get("workload") || eaAdd.get("workload_duration"))
 	
 	Map<String,Long> resource_workload = new HashMap<String,Long>();
 	Map<String,Long> resource_workload_time = new HashMap<String,Long>();
+
+	//Set<String> prevResources = new HashSet<String>();
+	//Long prevTime = null;
 	
 for(int i=0; i<eventlogSorted.size(); i++)
 {	
@@ -2135,19 +2659,34 @@ for(int i=0; i<eventlogSorted.size(); i++)
 				workload_duration = wl_dur.toString();
 				workload = prevWL.toString();
 				
-				if(type.equals("start") || type.equals("resume"))
+				
+				//&& prevResources.contains(resource)
+				//|| !prevResources.contains(resource)
+				//if(time != prevTime && !prevResources.contains(resource))
+				
+				if(time != prevWLTime)
 				{
-					resource_workload.put(resource,prevWL+1);
-				}
-				else
-				{
-					long wl = prevWL-1;
+					resource_workload_time.put(resource,time);
 					
-					if(wl>0)
-						resource_workload.put(resource,wl);
+					if(type.equals("start") || type.equals("resume"))
+					{
+						resource_workload.put(resource,prevWL+1);
+					}
 					else
-						resource_workload.put(resource,new Long(0));
+					{
+						long wl = prevWL-1;
+						
+						if(wl>0)
+							resource_workload.put(resource,wl);
+						else
+							resource_workload.put(resource,new Long(0));
+					}
+				
 				}
+				
+				//if(prevWLTime != time) 
+				//	resource_workload_time.put(resource,time);
+			
 				
 			}
 
@@ -2172,7 +2711,18 @@ for(int i=0; i<eventlogSorted.size(); i++)
 				eventlogdata = eventlogdata.substring(0, eventlogdata.length()-1);
 				edbline = "insert into eventlog("+eventdbnames+") values("+eventlogdata+")";	
 				equeries.add(edbline);
-		
+
+//update prev. resources & time values
+/*if(prevTime != null & prevTime != time)			
+{
+	prevResources.clear();
+	prevResources.add(resource);
+}
+else
+	prevResources.add(resource);
+	
+prevTime = time;
+*/
 }
 
 	
@@ -2302,7 +2852,6 @@ Vector<Vector <String>> sortLogInsertMy(Vector<Vector <String>> eventlog, Vector
 	return eventlogSorted;
 }
 
-//TODO
 
 Vector<Vector <String>> sortLogInsertMyCur(Vector<Vector <String>> eventlog, Vector<Vector <String>> eventlogSorted)
 {

@@ -1472,7 +1472,7 @@ tslotunit.addActionListener(
 	Vector<String> allTasks = new Vector<String>();
 
 	Statement dbStatement1 = con.createStatement();
-	String sqlQuery1 = "SELECT distinct resource from eventlog";
+	String sqlQuery1 = "SELECT distinct resource from eventlog order by resource";
 	ResultSet rs1 = dbStatement1.executeQuery(sqlQuery1);
 	rs1.beforeFirst();
 	
@@ -1483,7 +1483,7 @@ tslotunit.addActionListener(
 	}
 
 	Statement dbStatement2 = con.createStatement();
-	String sqlQuery2 = "SELECT distinct task from eventlog";
+	String sqlQuery2 = "SELECT distinct task from eventlog order by task";
 	ResultSet rs2 = dbStatement2.executeQuery(sqlQuery2);
 	rs2.beforeFirst();
 	
