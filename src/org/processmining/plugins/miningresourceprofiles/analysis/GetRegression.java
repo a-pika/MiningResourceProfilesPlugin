@@ -185,7 +185,7 @@ public class GetRegression{
 			return null;
 	}
 		
-		//TODO
+		
 		public Vector<String> getRegressionNewNPMult(InputParameters ip, Connection con, Rengine re, String depVar, Vector<String> ExpVars, String filename) throws Exception
 	{
 			Vector<String> result = new Vector<String>();

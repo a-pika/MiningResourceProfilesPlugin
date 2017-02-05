@@ -46,8 +46,8 @@ public class GetOutliers{
 		if (outr.length>0) {outliers_right = outliers_right.substring(0, outliers_right.length()-1); }	
 		if (outl.length>0) {outliers_left = outliers_left.substring(0, outliers_left.length()-1); }	
 		
-		System.out.println("right: "+outliers_right);
-		System.out.println("left: "+outliers_left);
+		//System.out.println("right: "+outliers_right);
+		//System.out.println("left: "+outliers_left);
 		
 		
 		dbStatement.executeUpdate("INSERT INTO outliers values('"+ts_id+"','"+method+"','"+outliers_right+"','"+outliers_left+"')");

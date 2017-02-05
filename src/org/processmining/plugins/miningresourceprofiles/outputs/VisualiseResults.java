@@ -936,8 +936,7 @@ public TimeSeries getTS(InputParameters ip, Connection con, int ts_id) throws Ex
 	String invalues = rs.getString("input_values");
 
 	rbits = rs.getString("ts_values");
-	//TODO
-	System.out.println("rbits: "+rbits);
+	//System.out.println("rbits: "+rbits);
 	
 	String ts_array[] = rbits.split(",");
 	Vector<Double> ts_values = new Vector<Double>();

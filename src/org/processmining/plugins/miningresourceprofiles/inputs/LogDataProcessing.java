@@ -124,22 +124,23 @@ public void createDB(final Connection con, XLog log, InputParameters ip)throws E
 	
 		createSQLViews(con);
 		
-		//TODO
-		//V1 (querying DB - long processing times)
-		//logToDB(log, con, map);
-		//addAttributes(log, con, map);
+		//TODO - different log pre-processing versions
 		
-		//V2
+		//V2 - old
 		//logToDB(log, con, map);
 		//addAttributesV2(log, con, map);
 
-		//V3
+		//V3 - old
 		//logToDBV2(log, con, map);
 		
 		//V4 (pre-processing in memory - with sort)
 		//logToDBV3(log, con, map);
 		
-		//V5 (pre-processing in memory - map or resource events)
+		//V1 (querying DB - long processing times)
+		//logToDB(log, con, map);
+		//addAttributes(log, con, map);
+		
+		//V5 (pre-processing in memory - map of resource events)
 		logToDBV4(log, con, map);
 
 };	 
@@ -2009,7 +2010,7 @@ for(int i=0; i<eventlog.size(); i++)
 				
 			//task_index -----------------------------------------------------
 							
-				if(etask.equals(task) && etype.equals(type) && etime<time)
+				if(etask.equalsIgnoreCase(task) && etype.equals(type) && etime<time)
 				count++;
 						
 			//duration--------------------------------------------------------
@@ -2088,7 +2089,6 @@ for(int i=0; i<eventlog.size(); i++)
 
 
 //calculating workload
-//TODO
 if(eaAdd.get("workload") || eaAdd.get("workload_duration"))
 {
 	Map<String,Vector<Vector <String>>> resource_log = new HashMap<String,Vector<Vector <String>>>();
