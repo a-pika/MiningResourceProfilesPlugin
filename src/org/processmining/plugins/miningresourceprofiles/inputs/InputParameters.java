@@ -74,6 +74,7 @@ public class InputParameters{
 	
 	public InputParameters() {
 		
+	
 		meanMethod = "average";
 		regressionMethod = "linear";//"non-parametric"
 		excludeTSZeros = false;

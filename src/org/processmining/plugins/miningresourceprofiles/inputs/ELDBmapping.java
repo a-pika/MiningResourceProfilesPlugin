@@ -14,7 +14,7 @@ public class ELDBmapping{
 	public Vector <String> DBCLTypes = new Vector<String>();
 	
 	
-	ELDBmapping() {
+	public ELDBmapping() {
 		
 					       
 	    } 

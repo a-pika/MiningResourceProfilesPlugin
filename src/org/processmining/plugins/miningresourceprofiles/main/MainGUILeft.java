@@ -20,6 +20,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 
 import org.deckfour.xes.model.XLog;
 import org.processmining.framework.util.ui.widgets.ProMScrollPane;
@@ -32,6 +33,13 @@ import org.processmining.plugins.miningresourceprofiles.analysis.GetRegressionDa
 import org.processmining.plugins.miningresourceprofiles.analysis.GetTimeSeries;
 import org.processmining.plugins.miningresourceprofiles.analysis.GetTrend;
 import org.processmining.plugins.miningresourceprofiles.analysis.RegressionData;
+import org.processmining.plugins.miningresourceprofiles.bp.AnalyseBP;
+import org.processmining.plugins.miningresourceprofiles.bp.BPOUT;
+import org.processmining.plugins.miningresourceprofiles.bp.BPTS;
+import org.processmining.plugins.miningresourceprofiles.bp.Chunk;
+import org.processmining.plugins.miningresourceprofiles.bp.DefineBPparameters;
+import org.processmining.plugins.miningresourceprofiles.bp.InputParametersBP;
+import org.processmining.plugins.miningresourceprofiles.bp.VisualiseBP;
 import org.processmining.plugins.miningresourceprofiles.define.DefineDEAViews;
 import org.processmining.plugins.miningresourceprofiles.define.DefineRBI;
 import org.processmining.plugins.miningresourceprofiles.define.DefineRegressionVars;
@@ -65,6 +73,9 @@ public class MainGUILeft{
 	final HeaderBar mainPane = new HeaderBar("");
 	mainPane.setLayout(new GridBagLayout());
 	final GridBagConstraints cMain = new GridBagConstraints();
+	
+	
+	
 	
 	final ProMScrollPane scrollPane = new ProMScrollPane(mainPane);
 	
@@ -794,8 +805,7 @@ public class MainGUILeft{
 		                	if (ip.deatype.equalsIgnoreCase("mrmt"))
 		                	{
 		                  		
-		                    	
-		                		String in = getdeaeff.getInMultResMultTime(ip,con);
+		                    	String in = getdeaeff.getInMultResMultTime(ip,con);
 			            		//System.out.println(in);
 			            		String out = getdeaeff.getOutMultResMultTime(ip,con);
 			            		//System.out.println(out);
@@ -936,7 +946,6 @@ public class MainGUILeft{
 	                                }
 	                        );
 		
-		
 menuPane.add(importlab);
 menuPane.add(createdbbut);
 menuPane.add(lab0);
@@ -956,6 +965,154 @@ menuPane.add(defregviewbut);
 menuPane.add(defnewdeainbut);
 menuPane.add(defnewdeaoutbut);
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+//BP
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+JLabel bplab = new JLabel("<html><h1>Batch processing discovery</h1></html>");
+bplab.setForeground(UISettings.TextLight_COLOR);
+bplab.setHorizontalAlignment(JLabel.CENTER);
+
+SlickerButton bptaskbut=new SlickerButton();
+bptaskbut.setText("Discover activity batch processing");
+
+bptaskbut.addActionListener(
+		new ActionListener(){
+			public void actionPerformed(ActionEvent e) 
+			{
+				try{
+										
+					mainPane.removeAll(); 
+					mainPane.updateUI();
+					mainPane.revalidate();
+					mainPane.repaint();
+
+					InputParametersBP ip = new InputParametersBP();
+					BPTS bpts = new BPTS();
+					DefineBPparameters defBP = new DefineBPparameters();
+					AnalyseBP abp = new AnalyseBP();
+					VisualiseBP vbp = new VisualiseBP();
+					BPOUT bpout = new BPOUT();
+					Vector<BPOUT> bpouts = new Vector<BPOUT>();
+					
+					XLog logP = log;
+					boolean logOK = abp.checkLog(logP);
+					
+					//Check events - missing values warning
+					if(!logOK)
+					{
+						final JPanel panel = new JPanel();
+						JOptionPane.showMessageDialog(panel, "Missing values in event log! (Log must have all case IDs, tasks, timestamps, resources and transaction types)", "Error", JOptionPane.ERROR_MESSAGE);
+					}
+					else
+					{
+						
+					
+					//Removing activity repetitions
+					//if(ip.preprocessLog)
+					//	logP = abp.removeLoops(log, ip);
+					
+					ip = defBP.getBPparameters(ip, logP);
+					ip = defBP.getBPparametersConfiguration(ip);
+					
+					// Get WT/NWT for all tasks - activity/activity-data perspectives
+					if(!ip.resource && ip.considerWorkingTime)
+					{
+						if(ip.showTSCheckBox)
+							ip = defBP.defineTSParamsWT(ip, logP); //user can modify time slot size
+						else
+							ip = defBP.defineTSParamsWTNoInput(ip, logP); //TS size -> median time between events
+						
+						bpts = abp.getTimesWT(ip, bpts);
+						bpts = abp.getWTTS(logP, ip, bpts);
+						bpts.WTCP = abp.getCP(re, ip, bpts.WTTS.toString());
+						Vector<Chunk> wtChunks = bpts.getChunksWT(ip,logP);
+						bpts.wt = bpts.getWT(wtChunks);
+						bpts.nwt = bpts.getNWT(wtChunks);
+					}
+					
+					if(!ip.resource) // task
+					{
+						for(int a=0; a<ip.bpActivity.size(); a++)
+						{	
+							ip.currentActivity = ip.bpActivity.elementAt(a);
+							bpout = abp.findBP(ip, bpts, defBP, abp, vbp, logP, re);
+							String label = "<html><h2>"+ip.currentActivity+"</h2></html>";
+							bpout.label = label;
+							bpouts.add(bpout);
+						}
+					}
+					else //task + resource
+					{
+						for(int r=0; r<ip.bpResource.size(); r++)
+						{
+							ip.currentResource = ip.bpResource.elementAt(r);
+							
+							if(ip.considerWorkingTime)
+							{
+								
+								if(ip.showTSCheckBox)
+									ip = defBP.defineTSParamsWT(ip, logP); //user can modify time slot size
+								else
+									ip = defBP.defineTSParamsWTNoInput(ip, logP); //TS size -> median time between events
+								
+								if(ip.slotSizeWT > -1)
+								{
+									bpts = abp.getTimesWT(ip, bpts);
+									bpts = abp.getWTTS(logP, ip, bpts);
+									bpts.WTCP = abp.getCP(re, ip, bpts.WTTS.toString());
+									Vector<Chunk> wtChunks = bpts.getChunksWT(ip,logP);
+									bpts.wt = bpts.getWT(wtChunks);
+									bpts.nwt = bpts.getNWT(wtChunks);
+								}
+							}
+							
+						if(ip.considerWorkingTime && ip.slotSizeWT > -1 || !ip.considerWorkingTime)
+							for(int a=0; a<ip.bpActivity.size(); a++)
+								{	
+										ip.currentActivity = ip.bpActivity.elementAt(a);
+										boolean resourceTaskCheck =  abp.checkResourceTask(logP, ip);
+										
+										if(resourceTaskCheck)
+										{
+											bpout = abp.findBP(ip, bpts, defBP, abp, vbp, logP, re);
+											String label = "<html><h2>"+ip.currentActivity+ " - " + ip.currentResource+"</h2></html>";
+											bpout.label = label;
+											bpouts.add(bpout);
+											
+										}
+										else
+										{
+											System.out.println("No Resource-Task combination");
+										}
+								}
+							else
+							{
+								System.out.println("Zero time between events - WT");
+							}
+						}
+						
+					}
+					
+					
+					// Visualisation
+					vbp.visualizeBP(mainPane, cMain, widthMenu, bpouts);
+					
+					}
+			
+					
+				}catch(Exception e1){JOptionPane.showMessageDialog(null, e1.toString(), "Error",
+						JOptionPane.ERROR_MESSAGE);};
+			}
+
+		}
+		);
+
+menuPane.add(lab1);
+menuPane.add(bplab);
+menuPane.add(bptaskbut);
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 c.gridwidth = 1;
 c.gridheight = 1;
 c.ipadx = widthMenu;
@@ -974,9 +1131,5 @@ pane.add(scrollPane,c);
    
    return pane;
    } 
-
 }
-
-
-
-
+	

@@ -103,6 +103,8 @@ for(int i=0; i<res.size();i++)
 		
 		return(new ChartPanel(barchart));
 	}
+	
+	
 
 	
 	public ChartPanel plotOneTS(InputParameters ip, Connection con, int ts_id, int inID) throws Exception
