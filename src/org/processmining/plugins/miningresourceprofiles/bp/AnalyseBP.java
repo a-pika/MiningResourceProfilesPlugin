@@ -137,7 +137,11 @@ public class AnalyseBP{
 			{
 				
 				XAttributeTimestamp time = (XAttributeTimestamp) e.getAttributes().get("time:timestamp");
-				String resource = e.getAttributes().get("org:resource").toString();
+				String resource = null;
+				
+				if(ip.logHasResources)
+				resource = e.getAttributes().get("org:resource").toString();
+				
 				String task = e.getAttributes().get("concept:name").toString();
 				String type = e.getAttributes().get("lifecycle:transition").toString();
 				
@@ -403,10 +407,11 @@ public class AnalyseBP{
 	}
 	
 	
-	public boolean checkLog(XLog log)
+	public InputParametersBP checkLog(XLog log, InputParametersBP ipbp)
 	{
 		
 		boolean logOK = true;
+		boolean resourcesOK = true;
 		
 		for (XTrace t : log) 
 		{
@@ -421,7 +426,10 @@ public class AnalyseBP{
 					logOK = false;
 				
 				if(e.getAttributes().get("org:resource") == null)
-					logOK = false;
+					{
+						//logOK = false; 
+						resourcesOK = false;
+					}
 				
 				if(e.getAttributes().get("concept:name") == null)
 					logOK = false;
@@ -432,7 +440,10 @@ public class AnalyseBP{
 			}
 		}
 		
-		return logOK;
+		ipbp.logOK = logOK;
+		ipbp.logHasResources = resourcesOK;
+		
+		return ipbp;
 	}
 
 	
@@ -1328,7 +1339,7 @@ public class AnalyseBP{
 
 	}
 	
-	public Vector<Chunk> mergeChunks(Vector<Chunk> chunks)
+	public Vector<Chunk> mergeChunks(Vector<Chunk> chunks, InputParametersBP ip)
 	{
 		Vector<Chunk> mergedChunks = new Vector<Chunk>();
 		Vector<Chunk> temp = new Vector<Chunk>();
@@ -1417,6 +1428,16 @@ public class AnalyseBP{
 				Set<String> uCaseIDs = new HashSet<String>();
 				uCaseIDs.addAll(mergedChunk.caseIDs);
 				mergedChunk.uniqueCases = uCaseIDs.size();
+				
+				//TODO
+				//version where batch size = number of events
+				
+				mergedChunk.numberOfCases = mergedChunk.uniqueCases;
+				
+				if(ip.bsEvents)
+				{
+					mergedChunk.uniqueCases = mergedChunk.taskEvents;
+				}
 				
 				mergedChunks.add(mergedChunk);
 			}
@@ -1536,7 +1557,7 @@ public class AnalyseBP{
 		
 		if(filter.mergeChunks)
 		{
-			chunks = abp.mergeChunks(chunks);
+			chunks = abp.mergeChunks(chunks,ip);
 		
 			for(int i=0; i<chunks.size(); i++)
 			{
@@ -1544,7 +1565,8 @@ public class AnalyseBP{
 			
 				if(chunks.elementAt(i).duration > filter.maxDur)
 					chunks.elementAt(i).isBP = false;
-			}
+				
+				}
 		}
 		
 		
@@ -1576,16 +1598,16 @@ public class AnalyseBP{
 		bpInfo = "<html><h3>Batch Processing Analysis</h3>";
 		bpInfo += "BP score: " + String.format("%.3f", bpScore) + "<br>";
 		bpInfo += "Number of batches: " + numberOfBatches + "<br>";
-		bpInfo += "AVG number of cases in a batch: " + String.format("%.3f", meanBPCases) + "<br>";
-		bpInfo += "AVG batch interruptions (%): " + String.format("%.3f", meanInterruptionsPart*100) + "<br>";
-		bpInfo += "AVG batch event density: " + String.format("%.3f", meanDensity) + "<br>";
-		bpInfo += "AVG distance from the mean event density: <br>";
+		bpInfo += "Mean batch size: " + String.format("%.3f", meanBPCases) + "<br>";
+		bpInfo += "Mean interruption ratio (%): " + String.format("%.3f", meanInterruptionsPart*100) + "<br>";
+		bpInfo += "Mean batch event density (per selected time unit): " + String.format("%.3f", meanDensity) + "<br>";
+		bpInfo += "Mean event density ratio: <br>";
 		bpInfo += "BP periods: " + String.format("%.3f", meanBPDist) + "<br>";
-		bpInfo += "Non-BP periods: " + String.format("%.3f", meanNBPDist) + "<br>";
+		bpInfo += "NBP periods: " + String.format("%.3f", meanNBPDist) + "<br>";
 		
-		bpInfo += "Durations: <br>";
+		bpInfo += "Durations (selected time unit): <br>";
 		bpInfo += "BP periods: "+String.format("%.4f",distStatDT.elementAt(0)) + " (mean), " +
-				String.format("%.4f",distStatDT.elementAt(1)) + " (STD)<br>Non-BP periods: " +
+				String.format("%.4f",distStatDT.elementAt(1)) + " (STD)<br>NBP periods: " +
 				String.format("%.4f",distStatDT.elementAt(2)) + " (mean), " +
 				String.format("%.4f",distStatDT.elementAt(3)) +" (STD)";
 		
@@ -1691,8 +1713,7 @@ public class AnalyseBP{
 		bpout.ip = ip;
 		bpout.BPInfo = bpInfo;
 		bpout.periodicity = periodicity;
-		
-		
+				
 		return bpout;
 	}
 
@@ -1708,11 +1729,13 @@ public void generateTS(InputParametersBP ip, BPTS bpts, DefineBPparameters defBP
 	
 		Vector<Chunk> chunks = new Vector<Chunk>();
 		
+	
 		if(ip.showTSCheckBox)
 			ip = defBP.defineTSParamsBP(ip, logP, bpts); //user can change ts size
 		else
 			ip = defBP.defineTSParamsBPNoInput(ip, logP, bpts); // ts -> median
 		
+			
 		if(ip.slotSize > -1)
 		{
 		
@@ -1735,10 +1758,14 @@ public void generateTS(InputParametersBP ip, BPTS bpts, DefineBPparameters defBP
 		}
 		else	
 		{
+	
 			chunks = bpts.getChunksA(ip,logP);
 			
-			chunks = bpts.getChunksAOther(ip,logP,chunks);
+			if(ip.logHasResources)
+				chunks = bpts.getChunksAOther(ip,logP,chunks);
+			
 		}
+		
 		
 		
 	if(chunks.size() > 0)
@@ -1767,6 +1794,18 @@ public void generateTS(InputParametersBP ip, BPTS bpts, DefineBPparameters defBP
 		
 		
 		Double cutOffthreshold = ip.batchTaskThreshold * ip.minDistanceFromMean;
+		
+		//TODO
+			for(int i=0; i<chunks.size(); i++)
+			{
+				chunks.elementAt(i).numberOfCases = chunks.elementAt(i).uniqueCases;
+				
+				//version where batch size = number of events
+				if(ip.bsEvents)
+				{
+				chunks.elementAt(i).uniqueCases = chunks.elementAt(i).taskEvents;
+				}
+			}
 		
 		
 		//Labelling chunks as BP/NBP

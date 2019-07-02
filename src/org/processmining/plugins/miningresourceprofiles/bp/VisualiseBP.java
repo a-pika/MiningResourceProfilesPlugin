@@ -63,7 +63,7 @@ public class VisualiseBP{
 	        	
 	        	//////////////////////////////////////////////////
 	        	
-	        	if(chartType.equals("Distance from the mean ED"))
+	        	if(chartType.equals("Event density ratio"))
 	        		val = chunks.elementAt(i).distanceFromMean;
 	        	
 	        	if(chartType.equals("Duration"))
@@ -72,7 +72,7 @@ public class VisualiseBP{
 	        	if(chartType.equals("Event Density"))
 	        		val = chunks.elementAt(i).taskDensity;
 	        	
-	        	if(chartType.equals("Size"))
+	        	if(chartType.equals("Number of events"))
 	        		val = (double) chunks.elementAt(i).uniqueCases;
 	        	
 	        	if(chartType.equals("Interruptions"))
@@ -151,7 +151,7 @@ public class VisualiseBP{
 			
 			//Create data set
 	        final DefaultCategoryDataset dataset = new DefaultCategoryDataset();
-	        final String series1 = "Chunk distances from the mean event density";
+	        final String series1 = "Chunk event density ratios";
 	    
 	        for (int i=0; i<chunks.size(); i++)
 	        {
@@ -428,14 +428,14 @@ public class VisualiseBP{
 		return(new ChartPanel(chart));
 	}
 
-	public void visualizeBP(final HeaderBar mainPane, final GridBagConstraints cMain, final int widthMenu, final Vector<BPOUT> bpouts) throws Exception
+	public void visualizeBP(final HeaderBar mainPane, final GridBagConstraints cMain, final int widthMenu, final Vector<BPOUT> bpouts, final InputParametersBP ip) throws Exception
 	{
 		
 		VisualiseBP visRes = new VisualiseBP();
 		final AnalyseBP abp = new AnalyseBP();
 		
 		int imgWBP = (int) (widthMenu * 4.5);
-		int imgHBP = (int) (widthMenu * 0.8);
+		int imgHBP = (int) (widthMenu * 0.9);
 		cMain.anchor = GridBagConstraints.WEST;
 		
 		final FilterBP filter = bpouts.elementAt(0).filter;
@@ -528,10 +528,10 @@ public class VisualiseBP{
 		
 		DefaultComboBoxModel<String> model1 = new DefaultComboBoxModel<String>();
 		model1.addElement(filter.chartInfo);
-		if(!filter.chartInfo.equals("Distance from the mean ED")) model1.addElement("Distance from the mean ED");
+		if(!filter.chartInfo.equals("Event density ratio")) model1.addElement("Event density ratio");
 		if(!filter.chartInfo.equals("Duration")) model1.addElement("Duration");
 		//if(!filter.chartInfo.equals("Event density")) model1.addElement("Event density");
-		if(!filter.chartInfo.equals("Size")) model1.addElement("Size");
+		if(!filter.chartInfo.equals("Number of events")) model1.addElement("Number of events");
 		//if(!filter.chartInfo.equals("Interruptions")) model1.addElement("Interruptions");
 		final ProMComboBox<String> BPinfo = new ProMComboBox<String>(model1);
 	    BPinfo.setForeground(UISettings.TextLight_COLOR);
@@ -543,7 +543,7 @@ public class VisualiseBP{
 		cMain.gridy = 1;
 		mainPane.add(BPinfo, cMain);
 		
-		JLabel interruptionsLabel = new JLabel("<html><h10>Interruptions tolerance:</h10></html>");
+		JLabel interruptionsLabel = new JLabel("<html><h10>Interruption tolerance:</h10></html>");
 		interruptionsLabel.setForeground(UISettings.TextLight_COLOR);
 		interruptionsLabel.setHorizontalAlignment(JLabel.LEFT);
 		cMain.gridwidth = 1;
@@ -560,13 +560,20 @@ public class VisualiseBP{
 			model2.addElement("Unlimited");
 		else
 		{
-			Double tol = filter.interruptionTolerance*100;
-			model2.addElement(tol.toString()+"%");
+			if(ip.logHasResources)
+			{
+				Double tol = filter.interruptionTolerance*100;
+				model2.addElement(tol.toString()+"%");
+			}
 		}
+		
 		for(int i=0; i<inter.size(); i++)
 		{
-			Double tol = inter.elementAt(i)*100;
-			model2.addElement(tol.toString()+"%");
+			if(ip.logHasResources)
+			{
+				Double tol = inter.elementAt(i)*100;
+				model2.addElement(tol.toString()+"%");
+			}
 		}
 		
 		if(filter.checkInterruptions) 
@@ -583,7 +590,7 @@ public class VisualiseBP{
 		mainPane.add(interruptions, cMain);
 		
 		
-		JLabel batchSizeLabel = new JLabel("<html><h10>Min. number of cases:</h10></html>");
+		JLabel batchSizeLabel = new JLabel("<html><h10>Minimum batch size:</h10></html>");
 		batchSizeLabel.setForeground(UISettings.TextLight_COLOR);
 		batchSizeLabel.setHorizontalAlignment(JLabel.LEFT);
 		cMain.gridwidth = 1;
@@ -612,7 +619,7 @@ public class VisualiseBP{
 		mainPane.add(batchSize, cMain);
 
 
-		JLabel distanceLabel = new JLabel("<html><h10>Min. distance from the mean event density:</h10></html>");
+		JLabel distanceLabel = new JLabel("<html><h10>Min. event density ratio:</h10></html>");
 		distanceLabel.setForeground(UISettings.TextLight_COLOR);
 		distanceLabel.setHorizontalAlignment(JLabel.LEFT);
 		cMain.gridwidth = 1;
@@ -857,7 +864,7 @@ public class VisualiseBP{
 	            			bpOUTsUpdated.add(newBPOUT);
 	            		}
 	            		
-	            		visualizeBP(mainPane, cMain, widthMenu, bpOUTsUpdated);
+	            		visualizeBP(mainPane, cMain, widthMenu, bpOUTsUpdated, ip);
 	                	   	
 	                 }catch(Exception e1){JOptionPane.showMessageDialog(null, e1.toString(), "Error",
 	                         JOptionPane.ERROR_MESSAGE);};

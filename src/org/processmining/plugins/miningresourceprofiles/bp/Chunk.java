@@ -31,7 +31,8 @@ public class Chunk{
 	
 	public Integer taskEvents = 0;
 	public Integer otherEvents = 0;
-	public Integer uniqueCases = 0;
+	public Integer uniqueCases = 0; // is equal to taskEvents - version where batch size = number of events
+	public Integer numberOfCases = 0; //used in saved .csv file
 	
 	public Double taskDensity = null; //number of events per time unit
 	public Double otherPart = null; // otherEvents/taskEvents

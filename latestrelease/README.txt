@@ -1,5 +1,3 @@
-
-
 Configuration:
 	Windows 7
 	Java 7 64-bit
@@ -22,3 +20,5 @@ To install the package:
 [Prom packages path]\miningresourceprofiles-6\MiningResourceProfiles_lib\jrilib
 
 5. Restart Windows
+
+NOTE: the release does not include 'batch processing discovery' module (please download source code for 'batch processing discovery' functionality) 

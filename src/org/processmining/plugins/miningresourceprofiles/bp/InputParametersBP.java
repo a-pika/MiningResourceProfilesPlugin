@@ -5,6 +5,9 @@ import java.util.Vector;
 
 public class InputParametersBP{
 	
+	public boolean logHasResources;
+	public boolean logOK;
+	
 	public long timeUnit;
 	public int decNum; 
 	public String cpmType;
@@ -21,6 +24,7 @@ public class InputParametersBP{
 	public long numberOfSlotsWT;
 	
 	public boolean showTSCheckBox;
+	public boolean bsEvents;
 	
 	//script
 	public String logName;
@@ -78,6 +82,10 @@ public class InputParametersBP{
 	public Boolean mergeChunks;
 	
 	public InputParametersBP() {
+		
+		logHasResources = true;
+		logOK = true;
+		bsEvents = true; //TRUE - batch size = number of events; FALSE - batch size = number of cases
 		
 		detectSeasonality = true;
 		showTSCheckBox = false;

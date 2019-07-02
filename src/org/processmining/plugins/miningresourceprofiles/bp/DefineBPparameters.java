@@ -51,10 +51,16 @@ public class DefineBPparameters extends JDialog{
 		HashSet<String> ea = new HashSet<String>();
 		ea.add("concept:name");
 		ea.add("lifecycle:transition");
-		ea.add("org:resource");
+		
+		//if(ip.logHasResources)
+		//{
+			ea.add("org:resource");
+			ea.add("Resource");
+		//}
+		
 		ea.add("time:timestamp");
 		ea.add("Activity");
-		ea.add("Resource");
+		
 		
 		for (int i=0; i<eal.size();i++)
 			{
@@ -73,8 +79,11 @@ public class DefineBPparameters extends JDialog{
 			for (XEvent e : t) 
 			{
 				
-				if(e.getAttributes().get("org:resource") != null)
-				resources.add(e.getAttributes().get("org:resource").toString());
+				if(ip.logHasResources)
+				{
+					if(e.getAttributes().get("org:resource") != null)
+						resources.add(e.getAttributes().get("org:resource").toString());
+				}
 				
 				if(e.getAttributes().get("concept:name") != null)
 				activities.add(e.getAttributes().get("concept:name").toString());
@@ -116,10 +125,14 @@ public class DefineBPparameters extends JDialog{
 		String[] model1 = new String[allResources.size()+1];
 		model1[0] = "NONE";
 		
-		for(int j=0; j<allResources.size(); j++)
-			model1[j+1] = allResources.elementAt(j);
 		
-	 	final ProMCheckComboBox jopRes = new ProMCheckComboBox(model1);
+		if(ip.logHasResources)
+		{
+			for(int j=0; j<allResources.size(); j++)
+				model1[j+1] = allResources.elementAt(j);
+		}
+	 	
+		final ProMCheckComboBox jopRes = new ProMCheckComboBox(model1);
 	 	
 	 	
 	 	String[] model2 = new String[allActivities.size()];
@@ -316,19 +329,23 @@ public class DefineBPparameters extends JDialog{
 		pane.add(batchSize, c);
 		
 		// Interruptions
-		
 		DefaultComboBoxModel model2 = new DefaultComboBoxModel();
 		model2.addElement("Unlimited");
-		for(int j=0; j<100; j++)
+		
+		if(ip.logHasResources)
 		{
-			Integer val = j+1;
-			model2.addElement(val.toString()+"%");
+			for(int j=0; j<100; j++)
+			{
+				Integer val = j;
+				model2.addElement(val.toString()+"%");
+			}
+			
+			model2.addElement("200%");
+			model2.addElement("300%");
+			model2.addElement("400%");
+			model2.addElement("500%");
+			model2.addElement("1000%");
 		}
-		model2.addElement("200%");
-		model2.addElement("300%");
-		model2.addElement("400%");
-		model2.addElement("500%");
-		model2.addElement("1000%");
 	
 		final ProMComboBox interruptions = new ProMComboBox(model2);
 		
@@ -574,7 +591,8 @@ public class DefineBPparameters extends JDialog{
 			dist.add(el);
 	
 		Collections.sort(dist);
-		
+				
+		model1.addElement("1.8");
 		for(int i=0; i<dist.size(); i++)
 		{
 		model1.addElement(dist.elementAt(i).toString());
@@ -582,7 +600,7 @@ public class DefineBPparameters extends JDialog{
 		
 		final ProMComboBox minDist = new ProMComboBox(model1);
 		
-		JLabel minDistLab = new JLabel("<html>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Minimum distance from the mean event density:</html>");  
+		JLabel minDistLab = new JLabel("<html>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Minimum event density ratio:</html>");  
 		minDistLab.setForeground(UISettings.TextLight_COLOR);
 		c.ipadx = 300; 
 		c.ipady = 20; 
@@ -1555,7 +1573,11 @@ tslotunit.addActionListener(
 			{
 				
 				XAttributeTimestamp time = (XAttributeTimestamp) e.getAttributes().get("time:timestamp");
-				XAttributeLiteral res = (XAttributeLiteral) e.getAttributes().get("org:resource");
+				XAttributeLiteral res = null;
+				
+				if(ip.logHasResources)
+					res =	(XAttributeLiteral) e.getAttributes().get("org:resource");
+				
 				XAttributeLiteral task = (XAttributeLiteral) e.getAttributes().get("concept:name");
 				XAttributeLiteral type = (XAttributeLiteral) e.getAttributes().get("lifecycle:transition");
 				

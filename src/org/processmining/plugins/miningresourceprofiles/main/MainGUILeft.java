@@ -995,14 +995,20 @@ bptaskbut.addActionListener(
 					Vector<BPOUT> bpouts = new Vector<BPOUT>();
 					
 					XLog logP = log;
-					boolean logOK = abp.checkLog(logP);
+					ip = abp.checkLog(logP,ip);
 					
-					//Check events - missing values warning
-					if(!logOK)
+					if(!ip.logHasResources)
 					{
 						final JPanel panel = new JPanel();
-						JOptionPane.showMessageDialog(panel, "Missing values in event log! (Log must have all case IDs, tasks, timestamps, resources and transaction types)", "Error", JOptionPane.ERROR_MESSAGE);
+						JOptionPane.showMessageDialog(panel, "Missing resource information! (Some analyses are disabled)", "Warning", JOptionPane.ERROR_MESSAGE);
 					}
+					
+					if(!ip.logOK)
+					{
+						final JPanel panel = new JPanel();
+						JOptionPane.showMessageDialog(panel, "Missing values! (Log must have all case IDs, tasks, times and event types)", "Error", JOptionPane.ERROR_MESSAGE);
+					}
+					
 					else
 					{
 						
@@ -1035,7 +1041,9 @@ bptaskbut.addActionListener(
 						for(int a=0; a<ip.bpActivity.size(); a++)
 						{	
 							ip.currentActivity = ip.bpActivity.elementAt(a);
+							
 							bpout = abp.findBP(ip, bpts, defBP, abp, vbp, logP, re);
+							
 							String label = "<html><h2>"+ip.currentActivity+"</h2></html>";
 							bpout.label = label;
 							bpouts.add(bpout);
@@ -1054,6 +1062,9 @@ bptaskbut.addActionListener(
 									ip = defBP.defineTSParamsWT(ip, logP); //user can modify time slot size
 								else
 									ip = defBP.defineTSParamsWTNoInput(ip, logP); //TS size -> median time between events
+								
+								//final JPanel panel = new JPanel();
+								//JOptionPane.showMessageDialog(panel, "Test 1", "Error", JOptionPane.ERROR_MESSAGE);
 								
 								if(ip.slotSizeWT > -1)
 								{
@@ -1095,7 +1106,7 @@ bptaskbut.addActionListener(
 					
 					
 					// Visualisation
-					vbp.visualizeBP(mainPane, cMain, widthMenu, bpouts);
+					vbp.visualizeBP(mainPane, cMain, widthMenu, bpouts, ip);
 					
 					}
 			

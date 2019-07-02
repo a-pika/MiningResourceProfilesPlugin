@@ -17,7 +17,7 @@ public class FilterBP{
 	
 	public FilterBP()
 	{
-		chartInfo = "Distance from the mean ED";
+		chartInfo = "Event density ratio";
 		checkInterruptions = false;
 		interruptionTolerance = 0.0;
 		minBatchSize = 0;

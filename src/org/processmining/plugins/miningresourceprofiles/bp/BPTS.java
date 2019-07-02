@@ -813,7 +813,11 @@ public class BPTS{
 					
 					XAttributeTimestamp time = (XAttributeTimestamp) e.getAttributes().get("time:timestamp");
 					Date eventTime = time.getValue();
-					String resource = e.getAttributes().get("org:resource").toString();
+					String resource = null;
+					
+					if(ip.logHasResources)
+						resource = e.getAttributes().get("org:resource").toString();
+					
 					String task = e.getAttributes().get("concept:name").toString();
 					String type = e.getAttributes().get("lifecycle:transition").toString();
 						
@@ -1609,7 +1613,7 @@ public class BPTS{
 					
 					//csv lines
 					Vector<String> lines = new Vector<String>();
-					String title = "#,Start,End,Duration,Task completions,# of interruptions,Task density,Distance from the mean,is Batch,is Outlier,# of cases,cases,resources,interruptions\r\n";
+					String title = "#,Start,End,Duration,# of events,# of interruptions,Event density,Event density ratio,is Batch,is Outlier,# of cases,Cases,Resources,Interruptions\r\n";
 					lines.add(title);
 					
 					for(int i=0; i<chunks.size(); i++)
@@ -1635,7 +1639,7 @@ public class BPTS{
 												String.format("%.2f",chunks.elementAt(i).taskDensity) + "," + 
 												String.format("%.2f",chunks.elementAt(i).distanceFromMean) + "," +
 												chunks.elementAt(i).isBP +","+ chunks.elementAt(i).isOutlier + "," + 
-												chunks.elementAt(i).uniqueCases + "," +
+												chunks.elementAt(i).numberOfCases + "," +
 												c + "," + res + "," + t + "\r\n";
 						
 						lines.add(chunkLine);
