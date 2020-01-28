@@ -85,7 +85,7 @@ public class InputParametersBP{
 		
 		logHasResources = true;
 		logOK = true;
-		bsEvents = true; //TRUE - batch size = number of events; FALSE - batch size = number of cases
+		bsEvents = false; //TRUE - batch size = number of events; FALSE - batch size = number of cases
 		
 		detectSeasonality = true;
 		showTSCheckBox = false;
