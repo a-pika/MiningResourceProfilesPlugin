@@ -8,6 +8,8 @@ import java.util.Vector;
 
 public class Chunk{
 	
+	public Vector<String> batchIDs = new Vector<String>();
+	
 	public Date chunkStart = null;
 	public Date chunkEnd = null;
 	

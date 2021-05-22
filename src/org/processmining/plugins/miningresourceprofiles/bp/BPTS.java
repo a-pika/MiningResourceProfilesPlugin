@@ -627,6 +627,10 @@ public class BPTS{
 					String resource = e.getAttributes().get("org:resource").toString();
 					String task = e.getAttributes().get("concept:name").toString();
 					String type = e.getAttributes().get("lifecycle:transition").toString();
+					//TODO
+					String batchID = null;
+					if(e.getAttributes().get("BatchID") != null)
+						batchID = e.getAttributes().get("BatchID").toString();
 						
 					boolean correctData = true;
 					
@@ -656,6 +660,9 @@ public class BPTS{
 							{
 								chunk.taskEvents++;
 								chunk.caseIDs.add(caseID);
+								//TODO								
+								if(batchID != null)
+									chunk.batchIDs.add(batchID);
 								
 								if(chunk.chunkFirstEventTime == null)
 									chunk.chunkFirstEventTime = eventTime;
@@ -679,6 +686,9 @@ public class BPTS{
 							{
 								chunk.taskEvents++;
 								chunk.caseIDs.add(caseID);
+								
+								if(batchID != null)
+									chunk.batchIDs.add(batchID);
 								
 								if(chunk.chunkFirstEventTime == null)
 									chunk.chunkFirstEventTime = eventTime;
@@ -820,6 +830,11 @@ public class BPTS{
 					
 					String task = e.getAttributes().get("concept:name").toString();
 					String type = e.getAttributes().get("lifecycle:transition").toString();
+					
+					//TODO
+					String batchID = null;
+					if(e.getAttributes().get("BatchID") != null)
+						batchID = e.getAttributes().get("BatchID").toString();
 						
 					boolean correctData = true;
 					
@@ -847,6 +862,9 @@ public class BPTS{
 					{
 						chunk.taskEvents++;
 						chunk.chunkResources.add(resource);		
+						//TODO								
+						if(batchID != null)
+							chunk.batchIDs.add(batchID);
 						
 						Date resourceStart = chunk.resourceStart.get(resource);
 						Date resourceEnd = chunk.resourceEnd.get(resource);
@@ -882,6 +900,9 @@ public class BPTS{
 					{
 						chunk.taskEvents++;
 						chunk.chunkResources.add(resource);
+						//TODO								
+						if(batchID != null)
+							chunk.batchIDs.add(batchID);
 						
 						Date resourceStart = chunk.resourceStart.get(resource);
 						Date resourceEnd = chunk.resourceEnd.get(resource);
@@ -1613,7 +1634,7 @@ public class BPTS{
 					
 					//csv lines
 					Vector<String> lines = new Vector<String>();
-					String title = "#,Start,End,Duration,# of events,# of interruptions,Event density,Event density ratio,is Batch,is Outlier,# of cases,Cases,Resources,Interruptions\r\n";
+					String title = "#,Start,End,Duration,# of events,# of interruptions,Event density,Event density ratio,is Batch,is Outlier,# of cases,Batch IDs set, Batch IDs,Cases,Resources,Interruptions\r\n";
 					lines.add(title);
 					
 					for(int i=0; i<chunks.size(); i++)
@@ -1633,13 +1654,23 @@ public class BPTS{
 						String t = tasks.substring(1, tasks.length()-1);
 						t = t.replaceAll(",", ";");
 						
+						String batchIDs = chunks.elementAt(i).batchIDs.toString();
+						String bid = batchIDs.substring(1, batchIDs.length()-1);
+						bid = bid.replaceAll(",",";");
+						
+						Set<String> batchIDsSet = new HashSet<String>();
+						batchIDsSet.addAll(chunks.elementAt(i).batchIDs);
+						String batchIDsset = batchIDsSet.toString();
+						String bidset = batchIDsset.substring(1, batchIDsset.length()-1);
+						bidset = bidset.replaceAll(",",";");
+						
 						
 						String chunkLine =i+1+","+ chunks.elementAt(i).chunkDurationStart +","+ chunks.elementAt(i).chunkDurationEnd +","+
 												durS +","+ chunks.elementAt(i).taskEvents +","+ chunks.elementAt(i).otherEvents +","+
 												String.format("%.2f",chunks.elementAt(i).taskDensity) + "," + 
 												String.format("%.2f",chunks.elementAt(i).distanceFromMean) + "," +
 												chunks.elementAt(i).isBP +","+ chunks.elementAt(i).isOutlier + "," + 
-												chunks.elementAt(i).numberOfCases + "," +
+												chunks.elementAt(i).numberOfCases + "," + bidset + "," + bid + "," +
 												c + "," + res + "," + t + "\r\n";
 						
 						lines.add(chunkLine);
